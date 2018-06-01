@@ -2,10 +2,35 @@
 kiplot:
   version: 1
 
+options:
+  basedir: /tmp/kiplot_out
+
 outputs:
 
-  - 'gerbers':
+  - name: 'gerbers'
     comment: "Gerbers for the board house"
+    type: gerber
+    dir: gerberdir
+    options:
+      subtract_mask_from_silk: true
+      use_protel_extensions: false
+      line_width: 0.15
+      exclude_edge_layer: false
+      exclude_pads_from_silkscreen: false
+      use_aux_axis_as_origin: false
     layers:
-      - F.Cu
-      - F.SilkS
+      - layer: F.Cu
+        suffix: F_Cu
+      - layer: F.SilkS
+        suffix: F_SilkS
+      # - layer: Inner.1
+      #   suffix: Inner_1
+
+  - name: excellon_drill
+    comment: "Excellon drill files"
+    type: excellon
+    dir: gerberdir
+    options:
+      metric_units: true
+      pth_and_npth_single_file: true
+      use_aux_axis_as_origin: false
