@@ -1,0 +1,11 @@
+# Example KiPlot config file
+kiplot:
+  version: 1
+
+outputs:
+
+  - 'gerbers':
+    comment: "Gerbers for the board house"
+    layers:
+      - F.Cu
+      - F.SilkS
