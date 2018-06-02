@@ -10,6 +10,7 @@ import re
 import pcbnew
 
 from . import plot_config as PC
+from . import error
 
 
 class CfgReader(object):
@@ -18,10 +19,11 @@ class CfgReader(object):
         pass
 
 
-class CfgYamlReader(CfgReader):
+class YamlError(error.KiPlotError):
+    pass
 
-    class YamlError(Exception):
-        pass
+
+class CfgYamlReader(CfgReader):
 
     def __init__(self):
         super(CfgYamlReader, self).__init__()
@@ -31,12 +33,12 @@ class CfgYamlReader(CfgReader):
         try:
             version = data['kiplot']['version']
         except KeyError:
-            raise self.YamlError("YAML config needs kiplot.version.")
+            raise YamlError("YAML config needs kiplot.version.")
             return None
 
         if version != 1:
-            raise self.YamlError("Unknown KiPlot config version: {}"
-                                 .format(version))
+            raise YamlError("Unknown KiPlot config version: {}"
+                            .format(version))
             return None
 
         return version
@@ -46,7 +48,7 @@ class CfgYamlReader(CfgReader):
         try:
             val = data[key]
         except KeyError:
-            raise self.YamlError("Value is needed for {}".format(key))
+            raise YamlError("Value is needed for {}".format(key))
 
         return val
 
@@ -68,7 +70,7 @@ class CfgYamlReader(CfgReader):
         try:
             mo.type = TYPES[type_s]
         except KeyError:
-            raise self.YamlError("Unknown drill map type: {}".format(type_s))
+            raise YamlError("Unknown drill map type: {}".format(type_s))
 
         return mo
 
@@ -80,55 +82,128 @@ class CfgYamlReader(CfgReader):
 
         return opts
 
+    def _perform_config_mapping(self, otype, cfg_options, mapping_list, 
+                                target):
+        """
+        Map a config dict onto a target object given a mapping list
+        """
+
+        for map_type in mapping_list:
+
+            # if this output type matches the mapping specification:
+            if otype in map_type['types']:
+
+                # for each mapping:
+                for key, mapping in map_type['options'].items():
+
+                    # set the internal option as needed
+                    if mapping['required'](cfg_options):
+
+                        cfg_val = self._get_required(cfg_options, key)
+                    elif key in cfg_options:
+                        # not required but given anyway
+                        cfg_val = cfg_options[key]
+                    else:
+                        continue
+
+                    # transform the value if needed
+                    if 'transform' in mapping:
+                        cfg_val = mapping['transform'](cfg_val)
+
+                    setattr(target, mapping['to'], cfg_val)
+
     def _parse_out_opts(self, otype, options):
+
+        # mappings from YAML keys to type_option keys
+        MAPPINGS = [
+            {
+                # Options for a general layer type
+                'types': ['gerber'],
+                'options': {
+                    'exclude_edge_layer': {
+                        'to': 'exclude_edge_layer',
+                        'required': lambda opts: True,
+                    },
+                    'exclude_pads_from_silkscreen': {
+                        'to': 'exclude_pads_from_silkscreen',
+                        'required': lambda opts: True,
+                    },
+                    'use_aux_axis_as_origin': {
+                        'to': 'use_aux_axis_as_origin',
+                        'required': lambda opts: True,
+                    },
+                    'line_width': {
+                        'to': 'line_width',
+                        'required': lambda opts: True,
+                    },
+                },
+            },
+            {
+                # Gerber only
+                'types': ['gerber'],
+                'options': {
+                    'subtract_mask_from_silk': {
+                        'to': 'subtract_mask_from_silk',
+                        'required': lambda opts: True,
+                    },
+                    'use_protel_extensions': {
+                        'to': 'use_protel_extensions',
+                        'required': lambda opts: True,
+                    },
+                },
+            },
+            {
+                # Drill files
+                'types': ['excellon'],
+                'options': {
+                    'use_aux_axis_as_origin': {
+                        'to': 'use_aux_axis_as_origin',
+                        'required': lambda opts: True,
+                    },
+                    'map': {
+                        'to': 'map_options',
+                        'required': lambda opts: False,
+                        'transform': self._parse_drill_map
+                    },
+                    'report': {
+                        'to': 'report_options',
+                        'required': lambda opts: False,
+                        'transform': self._parse_drill_report
+                    },
+                },
+            },
+            {
+                # Excellon drill files
+                'types': ['excellon'],
+                'options': {
+                    'metric_units': {
+                        'to': 'metric_units',
+                        'required': lambda opts: True,
+                    },
+                    'pth_and_npth_single_file': {
+                        'to': 'pth_and_npth_single_file',
+                        'required': lambda opts: True,
+                    },
+                    'minimal_header': {
+                        'to': 'minimal_header',
+                        'required': lambda opts: True,
+                    },
+                    'mirror_y_axis': {
+                        'to': 'mirror_y_axis',
+                        'required': lambda opts: True,
+                    },
+                },
+            },
+        ]
 
         po = PC.OutputOptions(otype)
 
         # options that apply to the specific output type
         to = po.type_options
 
-        # common options - layer outputs
-        if otype in ['gerber']:
-            to.line_width = self._get_required(options, 'line_width')
+        self._perform_config_mapping(otype, options, MAPPINGS, to)
 
-            to.exclude_edge_layer = self._get_required(
-                options, 'exclude_edge_layer')
-            to.exclude_pads_from_silkscreen = self._get_required(
-                options, 'exclude_pads_from_silkscreen')
-            to.use_aux_axis_as_origin = self._get_required(
-                options, 'use_aux_axis_as_origin')
-
-        # common options - drill outputs
-        if otype in ['excellon']:
-            to.use_aux_axis_as_origin = self._get_required(
-                options, 'use_aux_axis_as_origin')
-
-            to.generate_map = 'map' in options
-            to.generate_report = 'report' in options
-
-            if to.generate_map:
-                to.map_options = self._parse_drill_map(options['map'])
-
-            if to.generate_map:
-                to.report_options = self._parse_drill_report(options['report'])
-
-        # set type-specific options
-        if otype == 'gerber':
-            to.subtract_mask_from_silk = self._get_required(
-                options, 'subtract_mask_from_silk')
-            to.use_protel_extensions = self._get_required(
-                options, 'use_protel_extensions')
-
-        if otype == 'excellon':
-            to.metric_units = self._get_required(
-                options, 'metric_units')
-            to.mirror_y_axis = self._get_required(
-                options, 'mirror_y_axis')
-            to.minimal_header = self._get_required(
-                options, 'minimal_header')
-            to.pth_and_npth_single_file = self._get_required(
-                options, 'pth_and_npth_single_file')
-
+        print to, to.__dict__
         return po
 
     def _get_layer_from_str(self, s):
@@ -167,12 +242,12 @@ class CfgYamlReader(CfgReader):
             m = re.match(r"^Inner\.([0-9]+)$", s)
 
             if not m:
-                raise self.YamlError("Malformed inner layer name: {}"
-                                     .format(s))
+                raise YamlError("Malformed inner layer name: {}"
+                                .format(s))
 
             layer = PC.LayerInfo(int(m.group(1)), True)
         else:
-            raise self.YamlError("Unknown layer name: {}".format(s))
+            raise YamlError("Unknown layer name: {}".format(s))
 
         return layer
 
@@ -202,15 +277,15 @@ class CfgYamlReader(CfgReader):
         try:
             otype = o_obj['type']
         except KeyError:
-            raise self.YamlError("Output needs a type")
+            raise YamlError("Output needs a type")
 
         if otype not in ['gerber', 'excellon']:
-            raise self.YamlError("Unknown output type: {}".format(otype))
+            raise YamlError("Unknown output type: {}".format(otype))
 
         try:
             options = o_obj['options']
         except KeyError:
-            raise self.YamlError("Output need to have options specified")
+            raise YamlError("Output need to have options specified")
 
         outdir = self._get_required(o_obj, 'dir')
 
@@ -239,7 +314,7 @@ class CfgYamlReader(CfgReader):
         try:
             data = yaml.load(fstream)
         except yaml.YAMLError as e:
-            raise self.YamlError("Error loading YAML")
+            raise YamlError("Error loading YAML")
             return None
 
         self._check_version(data)
@@ -249,12 +324,7 @@ class CfgYamlReader(CfgReader):
         except KeyError:
             outdir = ""
 
-        # relative to CWD (absolute path overrides)
-        outdir = os.path.join(os.getcwd(), outdir)
-
         cfg = PC.PlotConfig()
-
-        cfg.outdir = outdir
 
         for o in data['outputs']:
 

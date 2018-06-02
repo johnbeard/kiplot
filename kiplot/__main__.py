@@ -19,6 +19,8 @@ def main():
                         help='The PCB .kicad-pcb board file')
     parser.add_argument('-c', '--plot-config', required=True,
                         help='The plotting config file to use')
+    parser.add_argument('-d', '--out-dir', default='.',
+                        help='The output directory (cwd if not given)')
 
     args = parser.parse_args()
 
@@ -36,6 +38,10 @@ def main():
 
     with open(args.plot_config) as cf_file:
         cfg = cr.read(cf_file)
+
+    # relative to CWD (absolute path overrides)
+    outdir = os.path.join(os.getcwd(), args.out_dir)
+    cfg.outdir = outdir
 
     plotter = kiplot.Plotter(cfg)
 

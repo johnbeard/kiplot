@@ -6,6 +6,7 @@ import logging
 import os
 
 from . import plot_config as PCfg
+from . import error
 
 try:
     import pcbnew
@@ -13,6 +14,10 @@ except ImportError:
     logging.error("Failed to import pcbnew Python module."
                   " Do you need to add it to PYTHONPATH?")
     raise
+
+
+class PlotError(error.KiPlotError):
+    pass
 
 
 class Plotter(object):
@@ -44,8 +49,8 @@ class Plotter(object):
             elif self._output_is_drill(op):
                 self._do_drill_plot(board, pc, op)
             else:
-                raise ValueError("Don't know how to plot type {}"
-                                 .format(op.options.type))
+                raise PlotError("Don't know how to plot type {}"
+                                .format(op.options.type))
 
             pc.ClosePlot()
 
@@ -85,7 +90,7 @@ class Plotter(object):
             if layer.is_inner:
 
                 if layer.layer < 1 or layer.layer >= layer_cnt - 1:
-                    raise ValueError(
+                    raise PlotError(
                         "Inner layer {} is not valid for this board"
                         .format(layer.layer))
 

@@ -36,11 +36,16 @@ class GerberOptions(LayerOptions):
 class DrillOptions(object):
 
     def __init__(self):
-        self.generate_map = False
-        self.generate_report = False
-
         self.map_options = None
         self.report_options = None
+
+    @property
+    def generate_map(self):
+        return self.map_options is not None
+
+    @property
+    def generate_report(self):
+        return self.report_options is not None
 
 
 class ExcellonOptions(DrillOptions):
