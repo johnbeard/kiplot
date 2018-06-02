@@ -88,111 +88,219 @@ class CfgYamlReader(CfgReader):
         Map a config dict onto a target object given a mapping list
         """
 
-        for map_type in mapping_list:
+        for mapping in mapping_list:
 
             # if this output type matches the mapping specification:
-            if otype in map_type['types']:
+            if otype in mapping['types']:
 
-                # for each mapping:
-                for key, mapping in map_type['options'].items():
+                key = mapping['key']
 
-                    # set the internal option as needed
-                    if mapping['required'](cfg_options):
+                # set the internal option as needed
+                if mapping['required'](cfg_options):
 
-                        cfg_val = self._get_required(cfg_options, key)
-                    elif key in cfg_options:
-                        # not required but given anyway
-                        cfg_val = cfg_options[key]
-                    else:
-                        continue
+                    cfg_val = self._get_required(cfg_options, key)
+                elif key in cfg_options:
+                    # not required but given anyway
+                    cfg_val = cfg_options[key]
+                else:
+                    continue
 
-                    # transform the value if needed
-                    if 'transform' in mapping:
-                        cfg_val = mapping['transform'](cfg_val)
+                # transform the value if needed
+                if 'transform' in mapping:
+                    cfg_val = mapping['transform'](cfg_val)
 
-                    setattr(target, mapping['to'], cfg_val)
+                setattr(target, mapping['to'], cfg_val)
 
     def _parse_out_opts(self, otype, options):
+
+        # note - type IDs are strings form the _config_, not the internal
+        # strings used as enums (in plot_config)
+        ANY_LAYER = ['gerber', 'ps', 'svg', 'hpgl', 'pdf', 'dxf']
+        ANY_DRILL = ['excellon', 'gerb_drill']
 
         # mappings from YAML keys to type_option keys
         MAPPINGS = [
             {
-                # Options for a general layer type
+                'key': 'use_aux_axis_as_origin',
+                'types': ['gerber', 'dxf'],
+                'to': 'use_aux_axis_as_origin',
+                'required': lambda opts: True,
+            },
+            {
+                'key': 'exclude_edge_layer',
+                'types': ANY_LAYER,
+                'to': 'exclude_edge_layer',
+                'required': lambda opts: True,
+            },
+            {
+                'key': 'exclude_pads_from_silkscreen',
+                'types': ANY_LAYER,
+                'to': 'exclude_pads_from_silkscreen',
+                'required': lambda opts: True,
+            },
+            {
+                'key': 'plot_sheet_reference',
+                'types': ANY_LAYER,
+                'to': 'plot_sheet_reference',
+                'required': lambda opts: True,
+            },
+            {
+                'key': 'plot_footprint_refs',
+                'types': ANY_LAYER,
+                'to': 'plot_footprint_refs',
+                'required': lambda opts: True,
+            },
+            {
+                'key': 'plot_footprint_values',
+                'types': ANY_LAYER,
+                'to': 'plot_footprint_values',
+                'required': lambda opts: True,
+            },
+            {
+                'key': 'force_plot_invisible_refs_vals',
+                'types': ANY_LAYER,
+                'to': 'force_plot_invisible_refs_vals',
+                'required': lambda opts: True,
+            },
+            {
+                'key': 'tent_vias',
+                'types': ANY_LAYER,
+                'to': 'tent_vias',
+                'required': lambda opts: True,
+            },
+            {
+                'key': 'check_zone_fills',
+                'types': ANY_LAYER,
+                'to': 'check_zone_fills',
+                'required': lambda opts: True,
+            },
+            {
+                'key': 'line_width',
+                'types': ['gerber', 'ps', 'svg', 'pdf'],
+                'to': 'line_width',
+                'required': lambda opts: True,
+            },
+            {
+                'key': 'subtract_mask_from_silk',
                 'types': ['gerber'],
-                'options': {
-                    'exclude_edge_layer': {
-                        'to': 'exclude_edge_layer',
-                        'required': lambda opts: True,
-                    },
-                    'exclude_pads_from_silkscreen': {
-                        'to': 'exclude_pads_from_silkscreen',
-                        'required': lambda opts: True,
-                    },
-                    'use_aux_axis_as_origin': {
-                        'to': 'use_aux_axis_as_origin',
-                        'required': lambda opts: True,
-                    },
-                    'line_width': {
-                        'to': 'line_width',
-                        'required': lambda opts: True,
-                    },
-                },
+                'to': 'subtract_mask_from_silk',
+                'required': lambda opts: True,
             },
             {
-                # Gerber only
+                'key': 'mirror_plot',
+                'types': ['ps', 'svg', 'hpgl', 'pdf'],
+                'to': 'mirror_plot',
+                'required': lambda opts: True,
+            },
+            {
+                'key': 'negative_plot',
+                'types': ['ps', 'svg', 'pdf'],
+                'to': 'negative_plot',
+                'required': lambda opts: True,
+            },
+            {
+                'key': 'sketch_plot',
+                'types': ['ps', 'hpgl'],
+                'to': 'sketch_plot',
+                'required': lambda opts: True,
+            },
+            {
+                'key': 'scaling',
+                'types': ['ps', 'hpgl'],
+                'to': 'scaling',
+                'required': lambda opts: True,
+            },
+            {
+                'key': 'drill_marks',
+                'types': ['ps', 'svg', 'dxf', 'hpgl', 'pdf'],
+                'to': 'drill_marks',
+                'required': lambda opts: True,
+            },
+            {
+                'key': 'use_protel_extensions',
                 'types': ['gerber'],
-                'options': {
-                    'subtract_mask_from_silk': {
-                        'to': 'subtract_mask_from_silk',
-                        'required': lambda opts: True,
-                    },
-                    'use_protel_extensions': {
-                        'to': 'use_protel_extensions',
-                        'required': lambda opts: True,
-                    },
-                },
+                'to': 'use_protel_extensions',
+                'required': lambda opts: True,
             },
             {
-                # Drill files
-                'types': ['excellon'],
-                'options': {
-                    'use_aux_axis_as_origin': {
-                        'to': 'use_aux_axis_as_origin',
-                        'required': lambda opts: True,
-                    },
-                    'map': {
-                        'to': 'map_options',
-                        'required': lambda opts: False,
-                        'transform': self._parse_drill_map
-                    },
-                    'report': {
-                        'to': 'report_options',
-                        'required': lambda opts: False,
-                        'transform': self._parse_drill_report
-                    },
-                },
+                'key': 'gerber_precision',
+                'types': ['gerber'],
+                'to': 'gerber_precision',
+                'required': lambda opts: True,
             },
             {
-                # Excellon drill files
+                'key': 'create_gerber_job_file',
+                'types': ['gerber'],
+                'to': 'create_gerber_job_file',
+                'required': lambda opts: True,
+            },
+            {
+                'key': 'scale_adjust_x',
+                'types': ['ps'],
+                'to': 'scale_adjust_x',
+                'required': lambda opts: True,
+            },
+            {
+                'key': 'scale_adjust_y',
+                'types': ['ps'],
+                'to': 'scale_adjust_y',
+                'required': lambda opts: True,
+            },
+            {
+                'key': 'width_adjust',
+                'types': ['ps'],
+                'to': 'width_adjust',
+                'required': lambda opts: True,
+            },
+            {
+                'key': 'pen_width',
+                'types': ['hpgl'],
+                'to': 'pen_width',
+                'required': lambda opts: True,
+            },
+            {
+                'key': 'use_aux_axis_as_origin',
+                'types': ANY_DRILL,
+                'to': 'use_aux_axis_as_origin',
+                'required': lambda opts: True,
+            },
+            {
+                'key': 'map',
+                'types': ANY_DRILL,
+                'to': 'map_options',
+                'required': lambda opts: False,
+                'transform': self._parse_drill_map
+            },
+            {
+                'key': 'report',
+                'types': ANY_DRILL,
+                'to': 'report_options',
+                'required': lambda opts: False,
+                'transform': self._parse_drill_report
+            },
+            {
+                'key': 'metric_units',
                 'types': ['excellon'],
-                'options': {
-                    'metric_units': {
-                        'to': 'metric_units',
-                        'required': lambda opts: True,
-                    },
-                    'pth_and_npth_single_file': {
-                        'to': 'pth_and_npth_single_file',
-                        'required': lambda opts: True,
-                    },
-                    'minimal_header': {
-                        'to': 'minimal_header',
-                        'required': lambda opts: True,
-                    },
-                    'mirror_y_axis': {
-                        'to': 'mirror_y_axis',
-                        'required': lambda opts: True,
-                    },
-                },
+                'to': 'metric_units',
+                'required': lambda opts: True,
+            },
+            {
+                'key': 'pth_and_npth_single_file',
+                'types': ['excellon'],
+                'to': 'pth_and_npth_single_file',
+                'required': lambda opts: True,
+            },
+            {
+                'key': 'minimal_header',
+                'types': ['excellon'],
+                'to': 'minimal_header',
+                'required': lambda opts: True,
+            },
+            {
+                'key': 'mirror_y_axis',
+                'types': ['excellon'],
+                'to': 'mirror_y_axis',
+                'required': lambda opts: True,
             },
         ]
 
@@ -279,7 +387,7 @@ class CfgYamlReader(CfgReader):
         except KeyError:
             raise YamlError("Output needs a type")
 
-        if otype not in ['gerber', 'excellon']:
+        if otype not in ['gerber', 'ps', 'excellon']:
             raise YamlError("Unknown output type: {}".format(otype))
 
         try:

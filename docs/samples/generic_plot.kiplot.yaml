@@ -9,19 +9,23 @@ outputs:
     type: gerber
     dir: gerberdir
     options:
-      subtract_mask_from_silk: true
-      use_protel_extensions: false
-      line_width: 0.15
+      # generic layer options
       exclude_edge_layer: false
       exclude_pads_from_silkscreen: false
       use_aux_axis_as_origin: false
-
-      plot_sheet_reference: true
+      plot_sheet_reference: false
       plot_footprint_refs: true
       plot_footprint_values: true
       force_plot_invisible_refs_vals: false
       tent_vias: true
       check_zone_fills: true
+
+      # gerber options
+      line_width: 0.15
+      subtract_mask_from_silk: true
+      use_protel_extensions: false
+      gerber_precision: 4.5
+      create_gerber_job_file: true
     layers:
       - layer: F.Cu
         suffix: F_Cu
@@ -44,3 +48,36 @@ outputs:
         filename: 'drill_report.rpt'
       map:
         type: 'pdf'
+
+  - name: postscript
+    comment: "Postscript files"
+    type: ps
+    dir: gerberdir
+    options:
+      exclude_edge_layer: false
+      exclude_pads_from_silkscreen: false
+      use_aux_axis_as_origin: false
+      plot_sheet_reference: false
+      plot_footprint_refs: true
+      plot_footprint_values: true
+      force_plot_invisible_refs_vals: false
+      tent_vias: true
+      check_zone_fills: true
+
+      # PS options
+      line_width: 0.15
+      drill_marks: full
+      scaling: 2
+      sketch_plot: true
+      scale_adjust_x: 1.0
+      scale_adjust_y: 1.0
+      width_adjust: 0
+      mirror_plot: false
+      negative_plot: false
+    layers:
+      - layer: F.Cu
+        suffix: F_Cu
+      - layer: F.SilkS
+        suffix: F_SilkS
+      # - layer: Inner.1
+      #   suffix: Inner_1

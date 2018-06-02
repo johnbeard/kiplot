@@ -56,27 +56,41 @@ class Plotter(object):
 
     def _output_is_layer(self, output):
 
-        return output.options.type in [PCfg.OutputOptions.GERBER]
+        return output.options.type in [
+            PCfg.OutputOptions.GERBER,
+            PCfg.OutputOptions.POSTSCRIPT
+        ]
 
     def _output_is_drill(self, output):
 
-        return output.options.type in [PCfg.OutputOptions.EXCELLON]
+        return output.options.type in [
+            PCfg.OutputOptions.EXCELLON,
+        ]
 
     def _get_layer_plot_format(self, output):
         """
         Gets the Pcbnew plot format for a given KiPlot output type
         """
 
-        if output.options.type == PCfg.OutputOptions.GERBER:
-            return pcbnew.PLOT_FORMAT_GERBER
+        mapping = {
+            PCfg.OutputOptions.GERBER: pcbnew.PLOT_FORMAT_GERBER,
+            PCfg.OutputOptions.POSTSCRIPT: pcbnew.PLOT_FORMAT_POST
+        }
+
+        try:
+            return mapping[output.options.type]
+        except KeyError:
+            pass
 
         raise ValueError("Don't know how to translate plot type: {}"
                          .format(output.options.type))
 
     def _do_layer_plot(self, board, plot_ctrl, output):
 
+        # set up plot options for the whole output
         self._configure_plot_ctrl(plot_ctrl, output)
 
+        po = plot_ctrl.GetPlotOptions()
         layer_cnt = board.GetCopperLayerCount()
 
         # plot every layer in the output
@@ -97,9 +111,18 @@ class Plotter(object):
             # Set current layer
             plot_ctrl.SetLayer(layer.layer)
 
-            # Plot single layer to file
+            # Skipping NPTH is controlled by whether or not this is
+            # a copper layer
+            is_cu = pcbnew.IsCopperLayer(layer.layer)
+            po.SetSkipPlotNPTH_Pads(is_cu)
+
             plot_format = self._get_layer_plot_format(output)
+
+            # Plot single layer to file
+            logging.debug("Opening plot file for layer {} ({})"
+                          .format(layer.layer, suffix))
             plot_ctrl.OpenPlotfile(suffix, plot_format, desc)
+
             logging.debug("Plotting layer {} to {}".format(
                             layer.layer, plot_ctrl.GetPlotFileName()))
             plot_ctrl.PlotLayer()
@@ -160,6 +183,24 @@ class Plotter(object):
 
         po.SetSubtractMaskFromSilk(gerb_opts.subtract_mask_from_silk)
         po.SetUseGerberProtelExtensions(gerb_opts.use_protel_extensions)
+        po.SetGerberPrecision(gerb_opts.gerber_precision)
+        po.SetCreateGerberJobFile(gerb_opts.create_gerber_job_file)
+
+    def _configure_hpgl_opts(self, po, output):
+
+        assert(output.options.type == PCfg.OutputOptions.HPGL)
+        hpgl_opts = output.options.type_options
+
+        po.SetHPGLPenDiameter(hpgl_opts.pen_width)
+
+    def _configure_ps_opts(self, po, output):
+
+        assert(output.options.type == PCfg.OutputOptions.POSTSCRIPT)
+        ps_opts = output.options.type_options
+
+        po.SetWidthAdjust(ps_opts.width_adjust)
+        po.SetFineScaleAdjustX(ps_opts.scale_adjust_x)
+        po.SetFineScaleAdjustX(ps_opts.scale_adjust_y)
 
     def _configure_output_dir(self, plot_ctrl, output):
 
@@ -180,27 +221,34 @@ class Plotter(object):
 
         opts = output.options.type_options
 
-        # Set some important plot options:
-        po.SetPlotFrameRef(False)
-        # Line width for items without one defined
         po.SetLineWidth(opts.line_width)
 
-        po.SetAutoScale(False)  # do not change it
-        po.SetScale(1)  # do not change it
-        po.SetMirror(False)
+        po.SetAutoScale(opts.auto_scale)
+        po.SetScale(opts.scaling)
+
+        po.SetMirror(opts.mirror_plot)
+        po.SetNegative(opts.negative_plot)
+
+        po.SetPlotFrameRef(opts.plot_sheet_reference)
+        po.SetPlotReference(opts.plot_footprint_refs)
+        po.SetPlotValue(opts.plot_footprint_values)
+        po.SetPlotInvisibleText(opts.force_plot_invisible_refs_vals)
 
         po.SetExcludeEdgeLayer(opts.exclude_edge_layer)
         po.SetPlotPadsOnSilkLayer(not opts.exclude_pads_from_silkscreen)
         po.SetUseAuxOrigin(opts.use_aux_axis_as_origin)
 
+        po.SetPlotViaOnMaskLayer(not opts.tent_vias)
+
+        # in general, false, but gerber will set it back later
         po.SetUseGerberAttributes(False)
 
         if output.options.type == PCfg.OutputOptions.GERBER:
             self._configure_gerber_opts(po, output)
+        elif output.options.type == PCfg.OutputOptions.POSTSCRIPT:
+            self._configure_ps_opts(po, output)
 
-        # Disable plot pad holes
-        po.SetDrillMarksType(pcbnew.PCB_PLOT_PARAMS.NO_DRILL_SHAPE)
-        # Skip plot pad NPTH when possible: when drill size and shape == pad size
-        # and shape
-        # usually sel to True for copper layers
+        po.SetDrillMarksType(opts.drill_marks)
+
+        # We'll come back to this on a per-layer basis
         po.SetSkipPlotNPTH_Pads(False)
