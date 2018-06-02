@@ -52,6 +52,13 @@ outputs:
       map:
         type: 'pdf'
 
+  - name: gerber drills
+    comment: "Gerber drill files"
+    type: gerb_drill
+    dir: gerberdir
+    options:
+      use_aux_axis_as_origin: false
+
   - name: postscript
     comment: "Postscript files"
     type: ps

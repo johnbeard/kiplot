@@ -313,6 +313,8 @@ class DrillOptions(TypeOptions):
 
         super(DrillOptions, self).__init__()
 
+        self.use_aux_axis_as_origin = False
+
         self.map_options = None
         self.report_options = None
 
@@ -334,6 +336,13 @@ class ExcellonOptions(DrillOptions):
         self.metric_units = True
         self.minimal_header = False
         self.mirror_y_axis = False
+
+
+class GerberDrillOptions(DrillOptions):
+
+    def __init__(self):
+
+        super(GerberDrillOptions, self).__init__()
 
 
 class DrillReportOptions(object):
@@ -377,6 +386,8 @@ class OutputOptions(object):
             self.type_options = PdfOptions()
         elif otype == self.EXCELLON:
             self.type_options = ExcellonOptions()
+        elif otype == self.GERB_DRILL:
+            self.type_options = GerberDrillOptions()
         else:
             self.type_options = None
 

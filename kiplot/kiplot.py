@@ -60,12 +60,16 @@ class Plotter(object):
             PCfg.OutputOptions.GERBER,
             PCfg.OutputOptions.POSTSCRIPT,
             PCfg.OutputOptions.DXF,
+            PCfg.OutputOptions.SVG,
+            PCfg.OutputOptions.PDF,
+            PCfg.OutputOptions.HPGL,
         ]
 
     def _output_is_drill(self, output):
 
         return output.options.type in [
             PCfg.OutputOptions.EXCELLON,
+            PCfg.OutputOptions.GERB_DRILL,
         ]
 
     def _get_layer_plot_format(self, output):
@@ -129,8 +133,35 @@ class Plotter(object):
             plot_ctrl.OpenPlotfile(suffix, plot_format, desc)
 
             logging.debug("Plotting layer {} to {}".format(
-                            layer.layer, plot_ctrl.GetPlotFileName()))
+                layer.layer, plot_ctrl.GetPlotFileName()))
             plot_ctrl.PlotLayer()
+
+    def _configure_excellon_drill_writer(self, board, offset, options):
+
+        drill_writer = pcbnew.EXCELLON_WRITER(board)
+
+        to = options.type_options
+
+        mirror_y = to.mirror_y_axis
+        minimal_header = to.minimal_header
+
+        merge_npth = to.pth_and_npth_single_file
+        zeros_format = pcbnew.EXCELLON_WRITER.DECIMAL_FORMAT
+
+        drill_writer.SetOptions(mirror_y, minimal_header, offset, merge_npth)
+        drill_writer.SetFormat(to.metric_units, zeros_format)
+
+        return drill_writer
+
+    def _configure_gerber_drill_writer(self, board, offset, options):
+
+        drill_writer = pcbnew.GERBER_WRITER(board)
+
+        # hard coded in UI?
+        drill_writer.SetFormat(5)
+        drill_writer.SetOptions(offset)
+
+        return drill_writer
 
     def _do_drill_plot(self, board, plot_ctrl, output):
 
@@ -138,22 +169,21 @@ class Plotter(object):
 
         outdir = plot_ctrl.GetPlotOptions().GetOutputDirectory()
 
-        drlwriter = pcbnew.EXCELLON_WRITER(board)
-
-        mirror_y = to.mirror_y_axis
-        minimal_header = to.minimal_header
-
         # dialog_gendrill.cpp:357
         if to.use_aux_axis_as_origin:
             offset = board.GetAuxOrigin()
         else:
             offset = pcbnew.wxPoint(0, 0)
 
-        merge_npth = to.pth_and_npth_single_file
-        zeros_format = pcbnew.EXCELLON_WRITER.DECIMAL_FORMAT
-
-        drlwriter.SetOptions(mirror_y, minimal_header, offset, merge_npth)
-        drlwriter.SetFormat(to.metric_units, zeros_format)
+        if output.options.type == PCfg.OutputOptions.EXCELLON:
+            drill_writer = self._configure_excellon_drill_writer(
+                board, offset, output.options)
+        elif output.options.type == PCfg.OutputOptions.GERB_DRILL:
+            drill_writer = self._configure_gerber_drill_writer(
+                board, offset, output.options)
+        else:
+            raise error.PlotError("Can't make a writer for type {}"
+                                  .format(output.options.type))
 
         gen_drill = True
         gen_map = to.generate_map
@@ -164,11 +194,11 @@ class Plotter(object):
                           .format(outdir))
 
         if gen_map:
-            drlwriter.SetMapFileFormat(to.map_options.type)
+            drill_writer.SetMapFileFormat(to.map_options.type)
             logging.debug("Generating drill map type {} in {}"
                           .format(to.map_options.type, outdir))
 
-        drlwriter.CreateDrillandMapFilesSet(outdir, gen_drill, gen_map)
+        drill_writer.CreateDrillandMapFilesSet(outdir, gen_drill, gen_map)
 
         if gen_report:
             drill_report_file = os.path.join(outdir,
@@ -176,7 +206,7 @@ class Plotter(object):
             logging.debug("Generating drill report: {}"
                           .format(drill_report_file))
 
-            drlwriter.GenDrillReportFile(drill_report_file)
+            drill_writer.GenDrillReportFile(drill_report_file)
 
     def _configure_gerber_opts(self, po, output):
 
