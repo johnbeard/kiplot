@@ -235,6 +235,18 @@ class CfgYamlReader(CfgReader):
                 'required': lambda opts: True,
             },
             {
+                'key': 'use_gerber_x2_attributes',
+                'types': ['gerber'],
+                'to': 'use_gerber_x2_attributes',
+                'required': lambda opts: True,
+            },
+            {
+                'key': 'use_gerber_net_attributes',
+                'types': ['gerber'],
+                'to': 'use_gerber_net_attributes',
+                'required': lambda opts: True,
+            },
+            {
                 'key': 'scale_adjust_x',
                 'types': ['ps'],
                 'to': 'scale_adjust_x',
@@ -253,9 +265,21 @@ class CfgYamlReader(CfgReader):
                 'required': lambda opts: True,
             },
             {
+                'key': 'a4_output',
+                'types': ['ps'],
+                'to': 'a4_output',
+                'required': lambda opts: True,
+            },
+            {
                 'key': 'pen_width',
                 'types': ['hpgl'],
                 'to': 'pen_width',
+                'required': lambda opts: True,
+            },
+            {
+                'key': 'polygon_mode',
+                'types': ['dxf'],
+                'to': 'polygon_mode',
                 'required': lambda opts: True,
             },
             {
@@ -387,7 +411,8 @@ class CfgYamlReader(CfgReader):
         except KeyError:
             raise YamlError("Output needs a type")
 
-        if otype not in ['gerber', 'ps', 'excellon']:
+        if otype not in ['gerber', 'ps', 'hpgl', 'dxf', 'pdf',
+                         'gerb_drill', 'excellon']:
             raise YamlError("Unknown output type: {}".format(otype))
 
         try:

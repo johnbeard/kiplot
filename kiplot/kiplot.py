@@ -58,7 +58,8 @@ class Plotter(object):
 
         return output.options.type in [
             PCfg.OutputOptions.GERBER,
-            PCfg.OutputOptions.POSTSCRIPT
+            PCfg.OutputOptions.POSTSCRIPT,
+            PCfg.OutputOptions.DXF,
         ]
 
     def _output_is_drill(self, output):
@@ -74,7 +75,11 @@ class Plotter(object):
 
         mapping = {
             PCfg.OutputOptions.GERBER: pcbnew.PLOT_FORMAT_GERBER,
-            PCfg.OutputOptions.POSTSCRIPT: pcbnew.PLOT_FORMAT_POST
+            PCfg.OutputOptions.POSTSCRIPT: pcbnew.PLOT_FORMAT_POST,
+            PCfg.OutputOptions.HPGL: pcbnew.PLOT_FORMAT_HPGL,
+            PCfg.OutputOptions.PDF: pcbnew.PLOT_FORMAT_PDF,
+            PCfg.OutputOptions.DXF: pcbnew.PLOT_FORMAT_DXF,
+            PCfg.OutputOptions.SVG: pcbnew.PLOT_FORMAT_SVG,
         }
 
         try:
@@ -186,6 +191,9 @@ class Plotter(object):
         po.SetGerberPrecision(gerb_opts.gerber_precision)
         po.SetCreateGerberJobFile(gerb_opts.create_gerber_job_file)
 
+        po.SetUseGerberAttributes(gerb_opts.use_gerber_x2_attributes)
+        po.SetIncludeGerberNetlistInfo(gerb_opts.use_gerber_net_attributes)
+
     def _configure_hpgl_opts(self, po, output):
 
         assert(output.options.type == PCfg.OutputOptions.HPGL)
@@ -201,6 +209,24 @@ class Plotter(object):
         po.SetWidthAdjust(ps_opts.width_adjust)
         po.SetFineScaleAdjustX(ps_opts.scale_adjust_x)
         po.SetFineScaleAdjustX(ps_opts.scale_adjust_y)
+        po.SetA4Output(ps_opts.a4_output)
+
+    def _configure_dxf_opts(self, po, output):
+
+        assert(output.options.type == PCfg.OutputOptions.DXF)
+        dxf_opts = output.options.type_options
+
+        po.SetDXFPlotPolygonMode(dxf_opts.polygon_mode)
+
+    def _configure_pdf_opts(self, po, output):
+
+        assert(output.options.type == PCfg.OutputOptions.PDF)
+        # pdf_opts = output.options.type_options
+
+    def _configure_svg_opts(self, po, output):
+
+        assert(output.options.type == PCfg.OutputOptions.SVG)
+        # pdf_opts = output.options.type_options
 
     def _configure_output_dir(self, plot_ctrl, output):
 
@@ -247,6 +273,14 @@ class Plotter(object):
             self._configure_gerber_opts(po, output)
         elif output.options.type == PCfg.OutputOptions.POSTSCRIPT:
             self._configure_ps_opts(po, output)
+        elif output.options.type == PCfg.OutputOptions.DXF:
+            self._configure_dxf_opts(po, output)
+        elif output.options.type == PCfg.OutputOptions.SVG:
+            self._configure_svg_opts(po, output)
+        elif output.options.type == PCfg.OutputOptions.PDF:
+            self._configure_pdf_opts(po, output)
+        elif output.options.type == PCfg.OutputOptions.HPGL:
+            self._configure_hpgl_opts(po, output)
 
         po.SetDrillMarksType(opts.drill_marks)
 

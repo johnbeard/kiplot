@@ -8,7 +8,17 @@ class KiPlotConfigurationError(error.KiPlotError):
     pass
 
 
-class LayerOptions(object):
+class TypeOptions(object):
+
+    def validate(self):
+        """
+        Return list of invalid settings
+        """
+
+        return []
+
+
+class LayerOptions(TypeOptions):
     """
     Common options that all layer outputs have
     """
@@ -17,12 +27,14 @@ class LayerOptions(object):
 
     def __init__(self):
 
+        super(LayerOptions, self).__init__()
+
         self.exclude_edge_layer = False
         self.exclude_pads_from_silkscreen = False
         self.plot_sheet_reference = False
 
         self._supports_line_width = False
-        self._line_width = None
+        self._line_width = 0
 
         self._supports_aux_axis_origin = False
         self._use_aux_axis_as_origin = False
@@ -42,6 +54,9 @@ class LayerOptions(object):
         self._supports_drill_marks = False
         self._drill_marks = pcbnew.PCB_PLOT_PARAMS.NO_DRILL_SHAPE
 
+        self._support_sketch_mode = False
+        self._sketch_mode = False
+
     @property
     def line_width(self):
         return self._line_width
@@ -56,7 +71,7 @@ class LayerOptions(object):
             print("Set LW %d" % self._line_width)
         else:
             raise KiPlotConfigurationError(
-                    "This output doesn't support setting line width")
+                "This output doesn't support setting line width")
 
     @property
     def auto_scale(self):
@@ -82,7 +97,7 @@ class LayerOptions(object):
                 self._auto_scale = False
         else:
             raise KiPlotConfigurationError(
-                   "This Layer output does not support scaling")
+                "This Layer output does not support scaling")
 
     @property
     def mirror_plot(self):
@@ -95,7 +110,7 @@ class LayerOptions(object):
             self._mirror_plot = val
         else:
             raise KiPlotConfigurationError(
-                   "This Layer output does not support mirror plotting")
+                "This Layer output does not support mirror plotting")
 
     @property
     def negative_plot(self):
@@ -108,7 +123,7 @@ class LayerOptions(object):
             self._mirror_plot = val
         else:
             raise KiPlotConfigurationError(
-                   "This Layer output does not support negative plotting")
+                "This Layer output does not support negative plotting")
 
     @property
     def drill_marks(self):
@@ -127,12 +142,12 @@ class LayerOptions(object):
                 }[val]
             except KeyError:
                 raise KiPlotConfigurationError(
-                        "Unknown drill mark type: {}".format(val))
+                    "Unknown drill mark type: {}".format(val))
 
             self._drill_marks = drill_mark
         else:
             raise KiPlotConfigurationError(
-                   "This Layer output does not support drill marks")
+                "This Layer output does not support drill marks")
 
     @property
     def use_aux_axis_as_origin(self):
@@ -145,8 +160,21 @@ class LayerOptions(object):
             self._use_aux_axis_as_origin = val
         else:
             raise KiPlotConfigurationError(
-                   "This Layer output does not support using the auxiliary"
-                   " axis as the origin")
+                "This Layer output does not support using the auxiliary"
+                " axis as the origin")
+
+    @property
+    def sketch_mode(self):
+        return self._sketch_mode
+
+    @sketch_mode.setter
+    def sketch_mode(self, val):
+
+        if self._supports_sketch_mode:
+            self._sketch_mode = val
+        else:
+            raise KiPlotConfigurationError(
+                "This Layer output does not support sketch mode")
 
 
 class GerberOptions(LayerOptions):
@@ -161,9 +189,21 @@ class GerberOptions(LayerOptions):
         self.subtract_mask_from_silk = False
         self.use_protel_extensions = False
         self.create_gerber_job_file = False
+        self.use_gerber_x2_attributes = False
+        self.use_gerber_net_attributes = False
 
         # either 5 or 6
         self._gerber_precision = None
+
+    def validate(self):
+
+        errs = super(GerberOptions, self).validate()
+
+        if (not self.use_gerber_x2_attributes and
+                self.use_gerber_net_attributes):
+            errs.append("Must set Gerber X2 attributes to use net attributes")
+
+        return errs
 
     @property
     def gerber_precision(self):
@@ -180,7 +220,7 @@ class GerberOptions(LayerOptions):
             self._gerber_precision = 6
         else:
             raise KiPlotConfigurationError(
-                    "Bad Gerber precision : {}".format(val))
+                "Bad Gerber precision : {}".format(val))
 
 
 class HpglOptions(LayerOptions):
@@ -188,6 +228,8 @@ class HpglOptions(LayerOptions):
     def __init__(self):
 
         super(HpglOptions, self).__init__()
+
+        self._supports_sketch_mode = True
 
         self._pen_width = None
 
@@ -211,11 +253,14 @@ class PsOptions(LayerOptions):
         self._supports_scaling = True
         self._supports_drill_marks = True
         self._supports_line_width = True
+        self._supports_sketch_mode = True
 
         self.scale_adjust_x = 1.0
         self.scale_adjust_y = 1.0
 
         self._width_adjust = 0
+
+        self.a4_output = False
 
     @property
     def width_adjust(self):
@@ -226,9 +271,48 @@ class PsOptions(LayerOptions):
         self._width_adjust = pcbnew.FromMM(width_adjust_mm)
 
 
-class DrillOptions(object):
+class SvgOptions(LayerOptions):
 
     def __init__(self):
+
+        super(SvgOptions, self).__init__()
+
+        self._supports_line_width = True
+        self._supports_mirror = True
+        self._supports_negative = True
+        self._supports_drill_marks = True
+
+
+class PdfOptions(LayerOptions):
+
+    def __init__(self):
+
+        super(PdfOptions, self).__init__()
+
+        self._supports_line_width = True
+        self._supports_mirror = True
+        self._supports_negative = True
+        self._supports_drill_marks = True
+
+
+class DxfOptions(LayerOptions):
+
+    def __init__(self):
+
+        super(DxfOptions, self).__init__()
+
+        self._supports_aux_axis_origin = True
+        self._supports_drill_marks = True
+
+        self.polygon_mode = False
+
+
+class DrillOptions(TypeOptions):
+
+    def __init__(self):
+
+        super(DrillOptions, self).__init__()
+
         self.map_options = None
         self.report_options = None
 
@@ -268,7 +352,13 @@ class OutputOptions(object):
 
     GERBER = 'gerber'
     POSTSCRIPT = 'ps'
+    HPGL = 'hpgl'
+    SVG = 'svg'
+    PDF = 'pdf'
+    DXF = 'dxf'
+
     EXCELLON = 'excellon'
+    GERB_DRILL = 'gerb_drill'
 
     def __init__(self, otype):
         self.type = otype
@@ -277,10 +367,25 @@ class OutputOptions(object):
             self.type_options = GerberOptions()
         elif otype == self.POSTSCRIPT:
             self.type_options = PsOptions()
+        elif otype == self.HPGL:
+            self.type_options = HpglOptions()
+        elif otype == self.SVG:
+            self.type_options = SvgOptions()
+        elif otype == self.DXF:
+            self.type_options = DxfOptions()
+        elif otype == self.PDF:
+            self.type_options = PdfOptions()
         elif otype == self.EXCELLON:
             self.type_options = ExcellonOptions()
         else:
             self.type_options = None
+
+    def validate(self):
+
+        if self.type_options is None:
+            return ["No type specific options found"]
+
+        return self.type_options.validate()
 
 
 class LayerInfo(object):
@@ -311,6 +416,9 @@ class PlotOutput(object):
 
         self.layers = []
 
+    def validate(self):
+        return self.options.validate()
+
 
 class PlotConfig(object):
 
@@ -321,6 +429,15 @@ class PlotConfig(object):
 
     def add_output(self, new_op):
         self._outputs.append(new_op)
+
+    def validate(self):
+
+        errs = []
+
+        for o in self._outputs:
+            errs += o.validate()
+
+        return errs
 
     @property
     def outputs(self):

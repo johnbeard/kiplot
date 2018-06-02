@@ -11,6 +11,9 @@ from . import config_reader
 
 def main():
 
+    EXIT_BAD_ARGS = 1
+    EXIT_BAD_CONFIG = 2
+
     parser = argparse.ArgumentParser(
         description='Command-line Plotting for KiCad')
     parser.add_argument('-v', '--verbose', action='store_true',
@@ -33,6 +36,7 @@ def main():
     if not os.path.isfile(args.plot_config):
         logging.error("Plot config file not found: {}"
                       .format(args.plot_config))
+        sys.exit(EXIT_BAD_ARGS)
 
     cr = config_reader.CfgYamlReader()
 
@@ -43,8 +47,15 @@ def main():
     outdir = os.path.join(os.getcwd(), args.out_dir)
     cfg.outdir = outdir
 
-    plotter = kiplot.Plotter(cfg)
+    # Finally, once all value are in, check they make sense
+    errs = cfg.validate()
 
+    if errs:
+        logging.error('Invalid config:\n\n' + "\n".join(errs))
+        sys.exit(EXIT_BAD_CONFIG)
+
+    # Set up the plotter and do it
+    plotter = kiplot.Plotter(cfg)
     plotter.plot(args.board_file)
 
 

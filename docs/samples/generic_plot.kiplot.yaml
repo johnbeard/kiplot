@@ -26,6 +26,9 @@ outputs:
       use_protel_extensions: false
       gerber_precision: 4.5
       create_gerber_job_file: true
+      use_gerber_x2_attributes: true
+      use_gerber_net_attributes: false
+
     layers:
       - layer: F.Cu
         suffix: F_Cu
@@ -74,6 +77,7 @@ outputs:
       width_adjust: 0
       mirror_plot: false
       negative_plot: false
+      a4_output: true
     layers:
       - layer: F.Cu
         suffix: F_Cu
@@ -81,3 +85,29 @@ outputs:
         suffix: F_Fab
       # - layer: Inner.1
       #   suffix: Inner_1
+      #   
+  - name: DXF
+    comment: "DXF files"
+    type: dxf
+    dir: gerberdir
+    options:
+      exclude_edge_layer: false
+      exclude_pads_from_silkscreen: false
+      use_aux_axis_as_origin: false
+      plot_sheet_reference: false
+      plot_footprint_refs: true
+      plot_footprint_values: true
+      force_plot_invisible_refs_vals: false
+      tent_vias: true
+      check_zone_fills: true
+
+      # PS options
+      drill_marks: full
+      sketch_plot: true
+      use_aux_axis_as_origin: false
+      polygon_mode: true
+    layers:
+      - layer: F.Cu
+        suffix: F_Cu
+      - layer: F.Fab
+        suffix: F_Fab
