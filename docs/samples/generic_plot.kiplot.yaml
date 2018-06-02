@@ -77,7 +77,7 @@ outputs:
     layers:
       - layer: F.Cu
         suffix: F_Cu
-      - layer: F.SilkS
-        suffix: F_SilkS
+      - layer: F.Fab
+        suffix: F_Fab
       # - layer: Inner.1
       #   suffix: Inner_1
