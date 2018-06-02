@@ -230,6 +230,9 @@ class HpglOptions(LayerOptions):
         super(HpglOptions, self).__init__()
 
         self._supports_sketch_mode = True
+        self._supports_mirror = True
+        self._supports_scaling = True
+        self._supports_drill_marks = True
 
         self._pen_width = None
 
