@@ -114,13 +114,13 @@ class LayerOptions(TypeOptions):
 
     @property
     def negative_plot(self):
-        return self._mirror_plot
+        return self._negative_plot
 
     @negative_plot.setter
     def negative_plot(self, val):
 
         if self._supports_mirror:
-            self._mirror_plot = val
+            self._negative_plot = val
         else:
             raise KiPlotConfigurationError(
                 "This Layer output does not support negative plotting")

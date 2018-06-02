@@ -411,7 +411,7 @@ class CfgYamlReader(CfgReader):
         except KeyError:
             raise YamlError("Output needs a type")
 
-        if otype not in ['gerber', 'ps', 'hpgl', 'dxf', 'pdf',
+        if otype not in ['gerber', 'ps', 'hpgl', 'dxf', 'pdf', 'svg',
                          'gerb_drill', 'excellon']:
             raise YamlError("Unknown output type: {}".format(otype))
 

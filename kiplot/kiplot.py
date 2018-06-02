@@ -282,6 +282,7 @@ class Plotter(object):
         po.SetAutoScale(opts.auto_scale)
         po.SetScale(opts.scaling)
 
+        print opts.mirror_plot
         po.SetMirror(opts.mirror_plot)
         po.SetNegative(opts.negative_plot)
 
