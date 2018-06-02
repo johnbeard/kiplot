@@ -36,7 +36,11 @@ class GerberOptions(LayerOptions):
 class DrillOptions(object):
 
     def __init__(self):
-        pass
+        self.generate_map = False
+        self.generate_report = False
+
+        self.map_options = None
+        self.report_options = None
 
 
 class ExcellonOptions(DrillOptions):
@@ -46,6 +50,20 @@ class ExcellonOptions(DrillOptions):
         super(ExcellonOptions, self).__init__()
 
         self.metric_units = True
+        self.minimal_header = False
+        self.mirror_y_axis = False
+
+
+class DrillReportOptions(object):
+
+    def __init__(self):
+        self.filename = None
+
+
+class DrillMapOptions(object):
+
+    def __init__(self):
+        self.type = None
 
 
 class OutputOptions(object):

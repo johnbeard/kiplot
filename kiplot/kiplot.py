@@ -37,6 +37,8 @@ class Plotter(object):
             # fresh plot controller
             pc = pcbnew.PLOT_CONTROLLER(board)
 
+            self._configure_output_dir(pc, op)
+
             if self._output_is_layer(op):
                 self._do_layer_plot(board, pc, op)
             elif self._output_is_drill(op):
@@ -55,7 +57,7 @@ class Plotter(object):
 
         return output.options.type in [PCfg.OutputOptions.EXCELLON]
 
-    def _get_plot_format(self, output):
+    def _get_layer_plot_format(self, output):
         """
         Gets the Pcbnew plot format for a given KiPlot output type
         """
@@ -91,7 +93,7 @@ class Plotter(object):
             plot_ctrl.SetLayer(layer.layer)
 
             # Plot single layer to file
-            plot_format = self._get_plot_format(output)
+            plot_format = self._get_layer_plot_format(output)
             plot_ctrl.OpenPlotfile(suffix, plot_format, desc)
             logging.debug("Plotting layer {} to {}".format(
                             layer.layer, plot_ctrl.GetPlotFileName()))
@@ -99,7 +101,49 @@ class Plotter(object):
 
     def _do_drill_plot(self, board, plot_ctrl, output):
 
-        pass
+        to = output.options.type_options
+
+        outdir = plot_ctrl.GetPlotOptions().GetOutputDirectory()
+
+        drlwriter = pcbnew.EXCELLON_WRITER(board)
+
+        mirror_y = to.mirror_y_axis
+        minimal_header = to.minimal_header
+
+        # dialog_gendrill.cpp:357
+        if to.use_aux_axis_as_origin:
+            offset = board.GetAuxOrigin()
+        else:
+            offset = pcbnew.wxPoint(0, 0)
+
+        merge_npth = to.pth_and_npth_single_file
+        zeros_format = pcbnew.EXCELLON_WRITER.DECIMAL_FORMAT
+
+        drlwriter.SetOptions(mirror_y, minimal_header, offset, merge_npth)
+        drlwriter.SetFormat(to.metric_units, zeros_format)
+
+        gen_drill = True
+        gen_map = to.generate_map
+        gen_report = to.generate_report
+
+        if gen_drill:
+            logging.debug("Generating drill files in {}"
+                          .format(outdir))
+
+        if gen_map:
+            drlwriter.SetMapFileFormat(to.map_options.type)
+            logging.debug("Generating drill map type {} in {}"
+                          .format(to.map_options.type, outdir))
+
+        drlwriter.CreateDrillandMapFilesSet(outdir, gen_drill, gen_map)
+
+        if gen_report:
+            drill_report_file = os.path.join(outdir,
+                                             to.report_options.filename)
+            logging.debug("Generating drill report: {}"
+                          .format(drill_report_file))
+
+            drlwriter.GenDrillReportFile(drill_report_file)
 
     def _configure_gerber_opts(self, po, output):
 
@@ -111,6 +155,17 @@ class Plotter(object):
 
         po.SetSubtractMaskFromSilk(gerb_opts.subtract_mask_from_silk)
         po.SetUseGerberProtelExtensions(gerb_opts.use_protel_extensions)
+
+    def _configure_output_dir(self, plot_ctrl, output):
+
+        po = plot_ctrl.GetPlotOptions()
+
+        # outdir is a combination of the config and output
+        outdir = os.path.join(self.cfg.outdir, output.outdir)
+
+        logging.debug("Output destination: {}".format(outdir))
+
+        po.SetOutputDirectory(outdir)
 
     def _configure_plot_ctrl(self, plot_ctrl, output):
 
@@ -144,10 +199,3 @@ class Plotter(object):
         # and shape
         # usually sel to True for copper layers
         po.SetSkipPlotNPTH_Pads(False)
-
-        # outdir is a combination of the config and output
-        outdir = os.path.join(self.cfg.outdir, output.outdir)
-
-        logging.debug("Output destination: {}".format(outdir))
-
-        po.SetOutputDirectory(outdir)

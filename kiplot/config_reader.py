@@ -50,6 +50,36 @@ class CfgYamlReader(CfgReader):
 
         return val
 
+    def _parse_drill_map(self, map_opts):
+
+        mo = PC.DrillMapOptions()
+
+        TYPES = {
+            'hpgl': pcbnew.PLOT_FORMAT_HPGL,
+            'ps': pcbnew.PLOT_FORMAT_POST,
+            'gerber': pcbnew.PLOT_FORMAT_GERBER,
+            'dxf': pcbnew.PLOT_FORMAT_DXF,
+            'svg': pcbnew.PLOT_FORMAT_SVG,
+            'pdf': pcbnew.PLOT_FORMAT_PDF
+        }
+
+        type_s = self._get_required(map_opts, 'type')
+
+        try:
+            mo.type = TYPES[type_s]
+        except KeyError:
+            raise self.YamlError("Unknown drill map type: {}".format(type_s))
+
+        return mo
+
+    def _parse_drill_report(self, report_opts):
+
+        opts = PC.DrillReportOptions()
+
+        opts.filename = self._get_required(report_opts, 'filename')
+
+        return opts
+
     def _parse_out_opts(self, otype, options):
 
         po = PC.OutputOptions(otype)
@@ -73,6 +103,15 @@ class CfgYamlReader(CfgReader):
             to.use_aux_axis_as_origin = self._get_required(
                 options, 'use_aux_axis_as_origin')
 
+            to.generate_map = 'map' in options
+            to.generate_report = 'report' in options
+
+            if to.generate_map:
+                to.map_options = self._parse_drill_map(options['map'])
+
+            if to.generate_map:
+                to.report_options = self._parse_drill_report(options['report'])
+
         # set type-specific options
         if otype == 'gerber':
             to.subtract_mask_from_silk = self._get_required(
@@ -83,6 +122,10 @@ class CfgYamlReader(CfgReader):
         if otype == 'excellon':
             to.metric_units = self._get_required(
                 options, 'metric_units')
+            to.mirror_y_axis = self._get_required(
+                options, 'mirror_y_axis')
+            to.minimal_header = self._get_required(
+                options, 'minimal_header')
             to.pth_and_npth_single_file = self._get_required(
                 options, 'pth_and_npth_single_file')
 
