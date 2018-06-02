@@ -437,6 +437,16 @@ class CfgYamlReader(CfgReader):
 
         return o_cfg
 
+    def _parse_preflight(self, pf, cfg):
+
+        logging.debug("Parsing preflight options: {}".format(pf))
+
+        if 'check_zone_fills' in pf:
+            cfg.check_zone_fills = pf['check_zone_fills']
+
+        if 'run_drc' in pf:
+            cfg.run_drc = pf['run_drc']
+
     def read(self, fstream):
         """
         Read a file object into a config object
@@ -452,12 +462,10 @@ class CfgYamlReader(CfgReader):
 
         self._check_version(data)
 
-        try:
-            outdir = data['options']['basedir']
-        except KeyError:
-            outdir = ""
-
         cfg = PC.PlotConfig()
+
+        if 'preflight' in data:
+            self._parse_preflight(data['preflight'], cfg)
 
         for o in data['outputs']:
 

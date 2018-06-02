@@ -29,11 +29,14 @@ class Plotter(object):
         self.cfg = cfg
 
     def plot(self, brd_file):
+
         logging.debug("Starting plot of board {}".format(brd_file))
 
         board = pcbnew.LoadBoard(brd_file)
 
         logging.debug("Board loaded")
+
+        self._preflight_checks(board)
 
         for op in self.cfg.outputs:
 
@@ -53,6 +56,16 @@ class Plotter(object):
                                 .format(op.options.type))
 
             pc.ClosePlot()
+
+    def _preflight_checks(self, board):
+
+        logging.debug("Preflight checks")
+
+        if self.cfg.check_zone_fills:
+            raise PlotError("Not sure if Python scripts can do zone check!")
+
+        if self.cfg.run_drc:
+            raise PlotError("Not sure if Python scripts can run DRC!")
 
     def _output_is_layer(self, output):
 

@@ -2,6 +2,12 @@
 kiplot:
   version: 1
 
+preflight:
+
+  # one day....
+  check_zone_fills: false
+  run_drc: false
+
 outputs:
 
   - name: 'gerbers'

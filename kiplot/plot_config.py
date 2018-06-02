@@ -68,7 +68,6 @@ class LayerOptions(TypeOptions):
         """
         if self._supports_line_width:
             self._line_width = pcbnew.FromMM(value)
-            print("Set LW %d" % self._line_width)
         else:
             raise KiPlotConfigurationError(
                 "This output doesn't support setting line width")
@@ -440,6 +439,9 @@ class PlotConfig(object):
 
         self._outputs = []
         self.outdir = None
+
+        self.check_zone_fills = False
+        self.run_drc = False
 
     def add_output(self, new_op):
         self._outputs.append(new_op)
