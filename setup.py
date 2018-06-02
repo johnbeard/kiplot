@@ -29,7 +29,7 @@ with io.open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
 
 
 about = {}
-with open(os.path.join(here, NAME, '__version__.py')) as f:
+with open(os.path.join(here, 'src', NAME, '__version__.py')) as f:
     exec(f.read(), about)
 
 
@@ -44,7 +44,8 @@ setup(
     author_email=EMAIL,
     python_requires=REQUIRES_PYTHON,
     url=URL,
-    packages=find_packages(exclude=('docs', 'tests',)),
+    packages=find_packages('src'),
+    package_dir={'': 'src'},
     # If your package is a single module, use this instead of 'packages':
     # py_modules=['mypackage'],
 
