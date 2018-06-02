@@ -24,3 +24,6 @@ wheels/
 .installed.cfg
 *.egg
 MANIFEST
+
+
+.pytest_cache

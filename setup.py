@@ -66,4 +66,6 @@ setup(
         'Programming Language :: Python :: Implementation :: PyPy',
         'Topic :: Scientific/Engineering :: Electronic Design Automation (EDA)',
     ],
+    setup_requires=['pytest-runner'],
+    tests_require=['pytest'],
 )
