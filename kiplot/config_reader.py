@@ -335,7 +335,6 @@ class CfgYamlReader(CfgReader):
 
         self._perform_config_mapping(otype, options, MAPPINGS, to)
 
-        print to, to.__dict__
         return po
 
     def _get_layer_from_str(self, s):
@@ -419,6 +418,8 @@ class CfgYamlReader(CfgReader):
             options = o_obj['options']
         except KeyError:
             raise YamlError("Output need to have options specified")
+
+        logging.debug("Parsing output options for {} ({})".format(name, otype))
 
         outdir = self._get_required(o_obj, 'dir')
 
