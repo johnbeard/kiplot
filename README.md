@@ -17,6 +17,10 @@ datasheet.
 
 KiPlot lets you do this.
 
+As a side effect of providing a scriptable plot driver for KiCad, KiPlot also
+allows functional testing of KiCad plot functions, which would otherwise be 
+somewhat unwieldy to write.
+
 ## Developing
 
 Set up a virtualenv:
@@ -31,3 +35,22 @@ Install with `pip -e`:
 cd path/to/kiplot
 pip install -e .
 ```
+
+This doesn't include the `pcbnew` Python package - that is assumed to
+be accessible to the program. You might need to add it to the `PYTHONPATH`.
+
+You might also need to set `LD_LIBRARY_PATH` (you need to be able to load
+`libkicad_3dsg.so`).
+
+For example, if you installed in `~/local/kicad`, you might want:
+
+```
+export PYTHONPATH=~/local/kicad/lib/python2.7/site-packages
+export LD_LIBRARY_PATH=~/local/kicad/lib64
+```
+
+# TODO list
+
+There are some things that still need work:
+
+* DRC checking - that can't be done over the Python interface yet.
