@@ -6,7 +6,7 @@ can use a Makefile to export your KiCad PCBs just as needed.
 
 For example, it's common that you might want for each board rev:
 
-* Check DRC one last time
+* Check DRC one last time (currently not possible)
 * Gerbers, drills and drill maps for a fab in their favourite format
 * Fab docs for the assembler
 * Pick and place files
@@ -27,9 +27,10 @@ Set up a virtualenv:
 
 ```
 virtualenv --python /usr/bin/python2.7 ~/venv/kiplot
+source ~/venv/kiplot/bin/activate
 ```
 
-Install with `pip -e`:
+Install `kiplot` with `pip -e`:
 
 ```
 cd path/to/kiplot
@@ -42,7 +43,7 @@ be accessible to the program. You might need to add it to the `PYTHONPATH`.
 You might also need to set `LD_LIBRARY_PATH` (you need to be able to load
 `libkicad_3dsg.so`).
 
-For example, if you installed in `~/local/kicad`, you might want:
+For example, if you installed in `~/local/kicad`, you might have:
 
 ```
 export PYTHONPATH=~/local/kicad/lib/python2.7/site-packages
@@ -53,4 +54,6 @@ export LD_LIBRARY_PATH=~/local/kicad/lib64
 
 There are some things that still need work:
 
-* DRC checking - that can't be done over the Python interface yet.
+* DRC checking - that can't be done over the Python interface yet. If/when
+  this is added to KiCad, KiPlot will be able to also be used for DRC
+  functional tests instead of a complex additonal test harness in C++.
