@@ -50,6 +50,16 @@ export PYTHONPATH=~/local/kicad/lib/python2.7/site-packages
 export LD_LIBRARY_PATH=~/local/kicad/lib64
 ```
 
+If you've installed "normally", you should not need to do this.
+
+## Testing
+
+There are some tests. Run them with pytest:
+
+```
+pytest
+```
+
 # TODO list
 
 There are some things that still need work:
