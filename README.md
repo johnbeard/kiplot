@@ -18,27 +18,32 @@ datasheet.
 KiPlot lets you do this.
 
 As a side effect of providing a scriptable plot driver for KiCad, KiPlot also
-allows functional testing of KiCad plot functions, which would otherwise be 
+allows functional testing of KiCad plot functions, which would otherwise be
 somewhat unwieldy to write.
 
 ## Developing
 
-Set up a virtualenv:
+### Set up a virtualenv (if you installed KiCad normally)
+
+If you installed KiCad from a package manager, or you used `make install`,
+you probably have the packages and libraries on you system paths.
+
+```
+virtualenv --python /usr/bin/python2.7 --system-site-packages ~/venv/kiplot
+```
+
+### Set up a virtualenv (if you installed KiCad locally)
+
+
+If the `pcbnew` Python package is *not* installed at a system level (e.g. if
+you are building locally and not installing to the system, you should not
+need any system packages:
 
 ```
 virtualenv --python /usr/bin/python2.7 ~/venv/kiplot
-source ~/venv/kiplot/bin/activate
 ```
-
-Install `kiplot` with `pip -e`:
-
-```
-cd path/to/kiplot
-pip install -e .
-```
-
-This doesn't include the `pcbnew` Python package - that is assumed to
-be accessible to the program. You might need to add it to the `PYTHONPATH`.
+However, you must make sure `pcbnew` is accessible to KiPlot.
+You might need to add it to the `PYTHONPATH`.
 
 You might also need to set `LD_LIBRARY_PATH` (you need to be able to load
 `libkicad_3dsg.so`).
@@ -50,7 +55,20 @@ export PYTHONPATH=~/local/kicad/lib/python2.7/site-packages
 export LD_LIBRARY_PATH=~/local/kicad/lib64
 ```
 
-If you've installed "normally", you should not need to do this.
+### Install KiPlot to the virtualenv
+
+Activate the virtualenv:
+
+```
+source ~/venv/kiplot/bin/activate
+```
+
+Install `kiplot` with `pip -e`:
+
+```
+cd path/to/kiplot
+pip install -e .
+```
 
 ## Testing
 
