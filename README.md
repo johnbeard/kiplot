@@ -21,7 +21,23 @@ As a side effect of providing a scriptable plot driver for KiCad, KiPlot also
 allows functional testing of KiCad plot functions, which would otherwise be
 somewhat unwieldy to write.
 
-## Developing
+## Using KiPlot
+
+You can call `kiplot` directly, passing a PCB file and a config file:
+
+```
+-b $(PCB) -c $(KIPLOT_CFG) -v
+```
+
+A simple target can be added to your `makefile`, so you can just run
+`make pcb_files` or integrate into your current build process.
+
+```
+pcb_files:
+    kiplot -b $(PCB) -c $(KIPLOT_CFG) -v
+```
+
+## Installing
 
 ### Set up a virtualenv (if you installed KiCad normally)
 
